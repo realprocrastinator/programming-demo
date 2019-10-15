@@ -1,0 +1,37 @@
+
+
+#============================================================================
+#Remote
+#will showe the short name for the remote origin is the default remote that it
+#was coloned from:q
+git remote
+git remote -v # will show the URL for each of the remote
+
+#add a remote then can use the the shortname as alias of the remote
+git remote add <shortname> <url>
+#get the data from the remote The command goes out to that remote project and pulls down all the data from that remote project that you don’t have yet.
+git fetch <remote>
+#git fetch command only downloads the data to your local repository — it doesn’t automatically merge it with any of your work or modify what you’re currently working on. You have to merge it manually into your work when you’re ready.
+git fetch
+#git pull command to automatically fetch and then merge that remote branch into your current branch
+git pull
+
+#rename and remove a remote
+git remote rename pb paul
+git remote remove paul
+
+#will link the current local branch to the remote branch so that each time git pull
+#attempt to bring in commits from the <remote-branch> into the current local branch
+git branch --set-upstream <remote-branch>
+#otherwise could use below along-with the very first git push as follows
+#This sets the upstream association for any future push/pull attempts automatically.
+git push -u origin local-branch
+#============================================================================
+#import a local report onto git hub
+#https://help.github.com/articles/adding-an-existing-project-to-github-using-the-command-line
+git init
+git add .
+git commit -am "first"
+git remote add origin remote repository URL
+git push -u origin master
+
