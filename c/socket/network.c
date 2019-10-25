@@ -223,11 +223,28 @@ struct hostent {
 // -addr: the socket address info relate to that socket
 int getpeername(int sockfd, struct sockaddr *addr, int *addrlen);
 
+//------------------------------------------------------------------------
+// select
+// Params:
+// -------
+// n: max socket fd number
+// readfds: pointer to the fd_set such that will notify when there is data ready to 
+//          receive from any one of these socket
+// writefds: notify when any of the socket is ready to send data to
+// exceptfds: notify when any of the exception or error occurs on any of the socket
+// timeout: to set time out when there is no even happends during the period
+//          tv_sec is the number of seconds
+//          tv_usec, the number of microseconds (1,000,000 microseconds in a second.)
+//After select() returns, the values in the sets will be changed to show which 
+//are ready for reading or writing, and which have exceptions.
+#include <sys/select.h>
+int select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+                            struct timeval *timeout);
+FD_SET(int fd, fd_set *set);  // add fd to the fd_set
+FD_CLR(int fd, fd_set *set);  // remove fd from the fd_set 
+FD_ISSET(int fd, fd_set *set);// bool,if fd is in fd_set
+FD_ZERO(fd_set *set);         // clear all fd in the set
 
 
 //------------------------------------------------------------------------
-// client server sample
-
-
-
 

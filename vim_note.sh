@@ -94,6 +94,17 @@ G #goes to the last line (or provide a count before the command for a specific l
 [i #display the definition of a variable
 [d #display the definition of a macro
 [I #display alll lines that contains the variable
+#---------------------------------------------------------------
+set marks ma, set mark a at current position
+singel quote or backtick  char  to go to the mark
+:marks to check marks
+
+:delmarks a	    delete mark a
+:delmarks a-d	delete marks a, b, c, d
+:delmarks abxy	delete marks a, b, x, y
+:delmarks aA	delete marks a, A
+:delmarks!	    delete all lowercase marks for the current buffer (a-z)
+
 
 
 #---------------------------------------------------------------
