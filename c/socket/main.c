@@ -10,18 +10,10 @@
 
 //---------------------------------------------------------------
 int nid = 2;
-int start_page_addr;
-int end_page_addr;
+long start_page_addr;
+long end_page_addr;
+long getpagesize(){return 100;}
 
-//---------------------------------------------------------------
-int split(char* s, char* delim, char** result){
-    int counter = 0;
-
-    for(char* pch = strtok(s,delim);pch !=NULL;
-            result[counter++] = pch, pch = strtok (NULL, delim));
-
-    return counter;
-}
 //---------------------------------------------------------------
 void smMemPartition_bak(){
     int pages = PAGE_NUM; 
@@ -32,7 +24,7 @@ void smMemPartition_bak(){
         int remain_pages = pages % nodes; // remainder of the pages
     
         if(!remain_pages){ // if equal divide
-            start_page_addr = ADDR + nid*page_interval;//*getpagesize();
+            start_page_addr = ADDR + nid*page_interval*getpagesize();
             end_page_addr = start_page_addr + page_interval;//*getpagesize(); 
         }else{ // not equal dividable
             if(nid <= (remain_pages-1)){ // spread the remaining pages from the start of the node
@@ -43,7 +35,7 @@ void smMemPartition_bak(){
                 end_page_addr = start_page_addr + page_interval;//*getpagesize(); 
             } 
         }
-        printf("Node%d has %d pages, start page:%d, end page%d\n",
+        printf("Node%d has %ld pages, start page:%ld, end page%ld\n",
                 nid,end_page_addr- start_page_addr,start_page_addr,end_page_addr);
     }
 }
@@ -145,50 +137,203 @@ void regPage(char* start_string, char* end_string,int nid){
 }
 
 //---------------------------------------------------------------
+// split according to delim and will stop tokenise if second string is readreply,
+// will not tokenise the remaining string after readreply
+// special case in format: nid readreply content_of_page
+//char s = "register|exit|nid readreply page_contentnid write addr|"
+int splitString(char* s, char* delim, char** result){
+    int counter = 0;
+    char* pch;
+    int read_flag = 0;
+    int pipe_flag = strcmp(delim,"|")? 0 :1;
 
+    for(pch = strtok(s,delim);pch !=NULL;
+            result[counter++] = pch, pch = strtok (NULL, delim)){
 
+        if(!strcmp(pch,"readReply")) { // to process words for each message
+            read_flag = 1;
+            break;
+        }
 
-#include <sys/mman.h>
+    }
+
+    if(read_flag){
+        result[counter++] = pch;
+        result[counter] = pch + strlen(result[counter -1]) + 1;
+        ++counter;
+    }
+
+    return counter;
+}
 
 //---------------------------------------------------------------
+#define PAGE_SIZE (strlen("hello word")+1)
+#define BUFF_SIZE 256//(strlen("page content") - 1)
+
+char* findChar(char* s,char delim,int len){
+    for(int i = 0; i < len;++i) 
+        if(*(s+i) == delim) return s + i;
+    return NULL;
+}
+
+char* findNthChar(char* s, char delim, int len,int n){
+    int count = 0;
+    for(int i = 0; i < len;++i)
+        if(*(s+i) == delim && ++count == n) return s + i;
+    return NULL;
+}
+
+
+int splitToken(char* s,char delim, char** result,int recv_len){
+    char* ptBegin = s ,*ptEnd = s;
+    int count = 0,len = recv_len;
+
+    while((ptEnd = findChar(ptBegin,delim,len))){
+        // spcecial case to exclude page special char conflict with delim
+        // in format: nid readreply page|content here|nid write addr
+        char *space_pt = findNthChar(ptBegin,' ',len,3); // find third space
+        char *delim_pt = findChar(ptBegin,'|',len);
+
+        // only consider when there is no token before the possible readreply;;
+        if(delim_pt > space_pt && space_pt &&
+                !strncmp(space_pt+1,"readReply", strlen("readReply"))){
+
+            char *space_pt2 = findChar(space_pt + 1,' ',len); // find second space
+            printf("fourth space:%s\n",space_pt2);
+            // skip the space from second space acroos all page content and replace
+            // the delimiter by the end of the page by string terminator
+            ptEnd = space_pt2 + 1 + (PAGE_SIZE);
+        }
+
+        *ptEnd = '\0'; // change delimiter to string terminator
+        result[count++] = ptBegin; // mark this token
+        len -= (ptEnd - ptBegin);
+        ptBegin = ptEnd + 1; // move pt for the next token
+    }
+
+    if(len) result[count++] = ptBegin; // if reach the end but there is still string
+
+    return count;
+}
+
+void makeReadReply(int nid1, int nid2, void* addr, char* send_buff){
+    char header[50];
+    sprintf(header,"%d %d %p readReply ",nid1,nid2,addr);
+
+
+
+}
+
+//---------------------------------------------------------------
+// Params:
+// -------
+// s:String buffer
+// result: store tokenised results
+// read_len:actual read buffer len
+int Tokeniser(char*s ,char** result,int read_len){
+    char* currPt = s;
+    char* endPt = currPt + read_len;
+    int count = 0,len;
+
+    for(sscanf(currPt,"%d",&len);currPt <endPt && !strncmp(currPt + 4,"begin",5);
+            currPt += len){
+        result[count++] = currPt;
+        sscanf(currPt,"%d",&len);// recover message len
+    }
+    return count;
+}
+
+//---------------------------------------------------------------
+/// Params:
+// -------
+// s: the star of the message sring
+// result: to store pointers where the space is delimited
+int MesDelim(char*s , char** result){
+     // split each message according to white sapce
+     // each message in format:19beign nid write ....
+     int len,count = 0; 
+     char* endPt, *currPt = s;
+
+     for(sscanf(currPt,"%d",&len),endPt = currPt + len,currPt +=4;
+             currPt < endPt;++currPt){
+         if(*currPt == ' ')
+             result[count++] = currPt + 1;
+     }
+     return count;
+}
+
+//---------------------------------------------------------------
+// Params:
+// --------
+// s: the message string literal
+// buffer: the buffer about to send message
+int makeMsg(char* s,char* buffer,int buffer_size){
+    printf("s len:%4d\n",(int)strlen(s));
+
+    memset(buffer,'\0',buffer_size);
+    int msg_len =  4 + strlen("begin") + strlen(s);
+    sprintf(buffer,"%4dbegin %s",msg_len,s);
+
+    return msg_len;
+}
+
+//---------------------------------------------------------------
+// allocate page owenr ship equally amoung nodes whcih match node protection
+void pageAlloc(int nodes,int page_num, int* page_table){
+    int equal_pages = page_num/nodes;
+    int remain_pages = page_num % nodes;
+    int dist_remain_mark = remain_pages*(equal_pages +(remain_pages? 1: 0));
+    
+    for(int i = 0; i < page_num;++i){
+        page_table[i] = i < dist_remain_mark? 
+            i/(equal_pages + (remain_pages? 1:0)) :remain_pages + (i - dist_remain_mark)/equal_pages; 
+    }
+}
+
+
+//---------------------------------------------------------------
+#include <sys/mman.h>
+#include <stdio.h>
+
+#define BUFFER_SIZE 256 
+#define ADDR  0x10a40f000 // start of the nmap address
 int main() {
-    void* pt = malloc(256);
-    char buff[256];
-    sprintf(buff,"%p",pt);
-    printf("This is addr_str:%s",buff);
-    printf("This is add:%p",pt);
+
+    smMemPartition_bak();
 
     /*
-    long start_addr, end_addr;
-    smMemPartition(&start_addr,&end_addr);
-    printf("Node 2 has %ld pages, start page:%p, end page%p\n",
-         (end_addr - start_addr)/getpagesize(),(void *)start_addr,(void *)end_addr);
+    int page_num = 30;
+    int page_table[30] = {};
+    int nodes = 13;
 
+    pageAlloc(nodes, page_num,page_table);
 
-
-    //smMemPartition();
-    //smMalloc(5);
-    void *pt;
-    char* addr = "0x114eb9000";
-    sscanf(addr,"%p",&pt);
-    long start_addr = (long)pt;
-    printf("string addr: %s, to long address:%ld\n",addr,start_addr);
-
-    char* start_string = addr;
-    char* end_string =addr;
-    regPage(start_string,end_string,1);
-
-   */
-
-    /*
-    void *addr = mmap((void *)ADDR,getpagesize(),PROT_WRITE|PROT_READ, 
-                        MAP_PRIVATE| MAP_ANONYMOUS,-1,0);
-    if (MAP_FAILED == addr) perror("mmap");
-
-    *((int *)addr) = 1;
-    printf("%d\n",*((int*)addr));
+    printf("Page table:\n");
+    for(int i = 0;i < page_num;++i) printf("%d\n",page_table[i]);
     */
 
 
 
+    /*
+
+    //char s[BUFFER_SIZE] ="1 2 addr readReply hello world|3 write|1 2 addr readReply hello world|3 write|     " ;
+    //char s[BUFFER_SIZE] ="1 2 addr readReply hello world|3 write|\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\01 2 addr readReply hello world|3 write|\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\01 2 addr readReply hello world|3 write|\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" ;
+    char s[BUFFER_SIZE] = "1 2 addr readReply hello world|1 2 addr readReply hello world|1 2 addr readReply hello world";
+    //char s[BUFFER_SIZE] = "|";
+    printf("Received message:%s\n",s);
+    
+
+    //printf("[SERVER] receive message:%s with len:%d\n", s,strlen(s));
+    char* msgs[256];
+    int token_len = splitToken(s,'|', msgs,sizeof(s));
+    //int token_len = splitString(recv_buffer,"|", msgs);
+
+    for(int i = 0; i < token_len;++i){
+        printf("[MSG] whole msg %d:%s\n",token_len,msgs[i]);
+        char* msg[256];
+        int msg_len = splitString(msgs[i]," ", msg);
+        for(int i = 0;i< msg_len;++i) printf("msg %d:%s\n",msg_len,msg[i]);
+    }
+
+    */
 }

@@ -1,0 +1,515 @@
+
+#======================================================================================
+# IAM
+-Overview
+User: Individual end user
+Groups: Collection of users under one set of permissions
+Role: that has certain access permission that can be assigned to client or AWS resources
+Policies: A document that defines one or more permissions, that can be attached to a role
+          ,client, group or resources.
+
+-Acess(Console, cmd)
+when attached a user to a group then group attach to a policy
+the secrete access key and the access key will be used when command line log into aws
+username and password are used to log into the console
+
+-Roles:
+AM roles are a secure way to grant permissions to entities that you trust. 
+Examples of entities include the following:
+
+>IAM user in another account
+>Application code running on an EC2 instance that needs to perform actions on AWS resources
+>An AWS service that needs to act on resources in your account to provide its features
+>Users from a corporate directory who use identity federation with SAML
+>IAM roles issue keys that are valid for short durations, making them a more secure way to grant access.
+
+-Summary:
+>IAM is gloabal , which would apply to different regions
+>Root Account is the account that when first create the AWS account, which has root acess
+>Always set up multi factor authentication on the root account
+>Create your own password policies
+
+#======================================================================================
+# EC2
+#-------------------------------------------------------------------------------
+4 ways to use EC2
+On Demand 
+  pay a fix rate per hour (or second) with no commitment
+Reserved 
+  get a discount for reserving ahead of time (and paying upfront), based on expected usage 
+  (1 Year or 3 Year terms)
+Spot 
+  if you’re flexible, bid when the price is right
+Dedicated hosts 
+  dedicated physical EC2 servers (allowing you to use your server-bound licenses, like VMWare of Oracle)
+
+#-------------------------------------------------------------------------------
+EC2 Instance type
+F for FPGA,Field Programmable Gate Array Genomic:Genomics research, financial Analysis, real time
+video processing, big data 
+I for IOPS, High Speed Storage: Data Warehouse
+G - Graphics:Video Encoding/3D Application Streaming
+H - High Disk Throughput: MapReduced based workloads, DFS(HDFS)
+T - cheap general purpose(T2 Micro)
+D - Density: Datawarehouse,Hadoop
+R - Ram: Memory Intensive Apps/DB
+M - main choice for general purpose apps
+C - Compute,CPU intensive Apps/DB
+P - Graphics(Pics), Machine learning or Bitcoin mininig
+X - Extreme Memory,SAP HANA/Apache Spark etc
+
+#-------------------------------------------------------------------------------
+EBS Types
+-General Purpose:usualy less thant 10,000 IPOS
+-Provisional IOPS SSD(IO1):I/O intensive work like databse( more than 10,000 IOPS )
+-Throughput Optimised HDD(ST1):Big data, Datawarehouse(can not be a boot volume)
+-Cold HDD (SC1): lowest cost storage for infrequenctly accessed workloads(can not be a boot volume)
+-Magnetic(Standard): Lowest cost per gigabyte of all EBS volume types that is bootable
+  
+#-------------------------------------------------------------------------------
+Load Balancer
+-Application Load Balancer:load balance according to application needs,
+    can be application request dependant.
+-Network Load Balancer:Balance at network layer with fast speed   
+-Classic Load Balancer:can load balance http/https applications and use layer
+7-specific features. You can also use strict layer 4 load balancing for applications
+that reply purely on the TCP protocol.
+
+504 gateway time out error , application did not reply within the timeout need to check
+the error in the application
+
+Since the server would only see the ip address of the load balancer, if it wants to
+see the source IP of the client, it can check the Forwarded-For header
+#-------------------------------------------------------------------------------
+#https://manage.vodien.com.au/ #DNS management
+# install Apache in the EC2 instance
+yum update -y # get the distribution update
+yum install httpd -y # install apache server
+service httpd start # start  the apache server
+chkconfig httpd on # automatically start server when reboot
+service httpd status # status
+# html should be saved in the /var/www/html for server to find it 
+
+#-------------------------------------------------------------------------------
+Route53
+Amazon's DNS service allow to map your domain name to
+EC2 Instance
+Load Balancer
+S3 Buckets
+
+
+#-------------------------------------------------------------------------------
+# CLI
+# https://docs.aws.amazon.com/cli/latest/index.html
+# the region if left default would be the region that this instance is created 
+aws configure # using access ID and acess secerete key to log in
+aws s3 ls
+aws s3 mb s3://mys3bucket # make a s3 bucket
+aws s3 cp hello.txt s3://mys3bucket # copy a local file to the s3 bucket
+aws s3 ls s3://mys3bucket # will list the current file in this bucket 
+
+-summary:
+>Least privillege: should give user the least amount of access
+>Create Groups: Users that added in the group will inherited the access previllege of
+  group, group permission are assigned by the policies.
+> Secrete Access Key: You will only see it once when you generate it,need to be saved in
+  a safe place, or can delte the original one and regenerate a new key and run aws configure
+> Do not share once access key: each person will have a unique access key
+
+#-------------------------------------------------------------------------------
+# S3 Role
+> Create a Role and then goes to EC2 instance action -> instance setting-> assign role
+# if previously used aws configure and used the access id and access secrete
+# need to delte the saved credential saved in ~/.aws/credentials as well as ~/.aws/config
+
+-summary:
+> Role allows not to use Access Key ID and Secrete Access Keys
+> Role are preferred from a security perspective(because secrete could be comprimised,
+need to save the secrete), role will not be compromised, since it is from the server side
+> Can cheange a policy on a role and it will take immediate effect.
+> You can attach and detach roles to running EC2 instances without having to stop or terminate
+these instances
+
+#======================================================================================
+# RDB
+
+-OLTP vs OLAP:
+OLTP(Online Transaction Processing):
+  processing line transaction data , like order ,Name , date ,Deliery address
+OLAP(Online Analitical Processing):
+  some processing on the transaction raw data, like sales price - unit cost
+
+-Elasticache
+web service that is easy to deploy, operate and scale in memory cahce in the cloud.
+Could improve the performance of the web by allowing to get access to cahce instead of
+reading from database disk e.g. the 10 most frequently accessed data items
+  
+Open Source in memory cache engines:
+Memcahced
+Reis
+
+-summary
+> RDS:SQL,MySQL,Aurora,...
+>No SQL:DynamoDB
+> OLAP: RedShift, for BI big data processing
+> Elasticache: In memory Caching
+
+#-------------------------------------------------------------------------------
+#RDB lab
+> EC2 instance with the boot script to start the apache server and the mysql php
+#!/bin/bash  
+yum install httpd php php-mysql -y  
+yum update -y  
+chkconfig httpd on  
+service httpd start  
+echo "<?php phpinfo();?>" > /var/www/html/index.php
+cd /var/www/html  
+wget https://s3.amazonaws.com/acloudguru-production/connect.php
+> create an MySQL DB with the security group to allow the the Ec2 access
+
+#-------------------------------------------------------------------------------
+# Non Relational Datbase
+> Collection = Table
+> Document = Row
+> Key Value Pairs = Field
+
+# ==================================================================
+# RDS Mutiple A-Z Read Replicas and back up
+# Automated Backups
+> Automated backup can recover data to any points within a retention period(one or 35 days).
+It will take a full daily snapshot and will store transaction logs throughout the day.
+When recover aws would choose the most recent daily backup and then apply the transaction logs
+relevant to that day.
+> Automated Backups are enabled by default. The backup data is stored in S3 and will get free
+storage space equal to the size of the the database1kjkj
+> Backups are taken within a defined window, during the backup window , the storage IO may be 
+suspeneded while your data is being backed up and might experience elevated latency.
+
+# snapshot
+> user initiated, peresistent even after the original RDS was deleted
+
+# Restoring Backups
+> when restoring a backup or snapshot, the database will be a new RDS instance with a new 
+DNS endpoint
+
+# Encyrption
+> Encyrption is done using the Aws Key Management Service
+if the original databse is encrypted ,same as the back up snapshot
+and its replicas.
+> Encrypting an existing DB instance is not supported,have to first
+create a snapshot, make a copy of the snapshot and encrypt the copy.
+
+# Multi-AZ RDS(synchrous)
+> A copy of your production database in another availability zone. write to the primary DB
+will automatically updated to the copy.
+> In the event of primary DB failure, Amazon RDS will automatically failover to the standby
+> It is only for disaster recover , not for performance, if need performance improvement, 
+need Read Replicas.
+
+# Read Replica
+> read only copy of the primary database.Achieved by asynchronous replication from the
+primary RDS instance to the read replica. Use for read heavy databse workload.
+> available for MySQL Sever, PostgreSQL, MariaDB, Aurora.
+> used for scaling ,not for data recovering.
+> must have a automatic backups turned on in order to deploy a read replica.
+> can have up to 5 read replica copies of any database.
+> can have read replica of read replica.
+> each read replica will have its own DNS endpoint.
+> read replicas can have Multi-AZ.
+> can create read replicas of Multi-AZ source database.
+> read replicas can be promoted to be their own database. This would break the replication.
+> read replica can be in a different region.
+
+
+# ==================================================================
+# ElasticCache
+> improves the performance of the web by allowing to retrive information from fast , managed,
+in memory caches, instead of relying entirely on the slow disk IO.
+
+# Memcached:
+> A widely adopted memory object caching system. ElasticCache is protocol compilant with 
+memcahced.Popular tools with existing Memcahced environment is also compatible with the service.
+> pure caching solution with no persistence, ElasticCache manages Memchaced nodes as a pool
+that can grow and shrink, similar to an Amazon EC2 Auto Scaling Group. Individual nodes are
+expendable, and ElastiCache provides additional capabilities here, such as automatic node
+replacement and Auto Discovery.
+# use case
+> object caching is the primary goal, to offload the database.
+> simple cahcing model.
+> runing large cache nodes and require multithread performance with untilization of mutiple cores. 
+> scale cache horizontally as you grow.
+
+# Redis:
+> open source key value store that support data structure like sorted sets, and lists.
+ElasticCache supports Master/Slave replication and Multi-AZ which can be used to
+achieve cross AZ redundancy.
+> because of the replication and peresistent features of Redis, ElasticCache manages Redis
+More as a relational database. Redis ElasticCache clusters are mananaged as stateful entities
+taht include failover, similar to how Amazon RDS manages database failover.
+# use case
+> more advanced data types like lists, hashes and sets.
+> sorting and ranking dataset in memory like leaderboards.
+> want to run in multiple AWS Availability Zone.
+
+-summary
+> ElasticCache is good if DB is read-heavy and not prone to frequent changing
+> if just to take of the load of the DB can simply use Memcahced
+> if do some analysis then choose Redshift. 
+# use Memcahced
+> object caching is the primary goal
+> keep things as simple as possible
+> scale cache horizontally
+# use Redis
+> hae advanced datatype like lists, hashes and sets
+> doing data sorting, ranking
+> Data Persistence
+> Muti AZ
+> Pub/Sub capabilities
+
+# ==================================================================
+# S3
+# object storage
+# https://blog.westerndigital.com/why-object-storage/
+# https://cloudian.com/blog/object-storage-vs-file-storage/
+> secure and scalable object storage that can be access from anywhere
+> file can be upto 5TB
+> unlimited Storage
+> File are stored in a Bucket
+> S3 is a universal name space, s.t. name must be unique
+
+# Consistency Model for S3
+> Read after Write consistency for PUTS of new file, as soon as file created , 
+will be able to read 
+> Eventual consistency for overwrite PUTS and DELETS(e.g. change ,delete file)
+
+# object based model
+> Key: name of the object
+> Value: the data itself , a sequence of bytes
+> Version ID
+> Metadata:data about the data that you are storing, like owner ,create date,context
+> Subresources: bucket specific config
+(e.g. bucket polices, access control list, cross origin resource sharing(CORS), make bucket
+in another region to get access to the bucket, Transfer acceleration: increase the speed
+of transfering files)
+
+# The basics
+> build for 99.9% available for the S3 platform.(uptime, the amount of time the service
+is available)
+> Amazon guranteee 99.9% availability 
+> Amazon guarantess 99.99999999999%(11 9 s) durability for S3 inforamtion. Meaning the amount of
+data that expected to loose for a given year.
+> Tiered Storage Available
+> Lifecle Management: set rules to move data amoung different tires.
+> Versioning: Version control
+> Encryption
+> Secure data access using control lists and bucket polices
+
+# s3 Storage Ties/Classes
+# durability vs availability
+# https://blog.westerndigital.com/data-availability-vs-durability/#:~:targetText=Availability%20refers%20to%20system%20uptime,can%20deliver%20data%20upon%20request.&targetText=Durability%2C%20on%20the%20other%20hand,rot%2C%20degradation%20or%20other%20corruption.
+> S3: 99.99% availability and 99.9999999999% durability, stored redundantly across multiple devices in
+multiple facilites, and is designed to sustain the loss of 2 facilites concurrently.
+> S3 - IA(Infrequent Accessed): For data that is accessed less frequently, but requries fast access
+when needed. Lower fee than S3, but are charged on a retrival basis.
+> S3 - One Zone: Same as IA however data is stored in a single Availability Zone only, still 99.999999999%
+durability, but only 99.5% availability. Cost is 20% less than the regualr S3-IA.
+(Since only stored in one availability zone, if that availability zone is down then service will not
+be available , but data will still be there once the availability zone is back online)
+> Reduced Redudancy Storage: Designed to provided 99.99% durability and 99.99% availability of objects
+over a given year. Used for data that can be recreated if lost, e.g.thumbnails
+> Glacier: Very cheap, but used for archieve only. Optimised for data that is infrequenctly accessed and it
+takes 3-5 hours to restore from Glacier.
+> S3 Intelligent Tiering
+  - Unknow or unpredictable access patterns
+  - 2 tiers - frequent and infrequent access
+  - Automatically moves your data to most cost-effective tier based on how frequently you access each
+  object
+  - 99.9999999999% durability
+  - 99.9 availability oaver a given year
+  - Optimize cost
+  - No fee for accessing your data but a small monthly fee for monitoring/automation $0.0025 per
+    1,000 objects
+
+# S3 charges
+> Storage per GB
+> Requests(Get, Put, Copy,etc)
+> Storage Management Pricing(Inventory,Analysis, Object Tags) 
+> Data Management Pricing(Data tranfer out of S3)
+> Transfer Acceleration(Use the cloud front to optimise transfers)
+
+# S3 FAQ
+https://aws.amazon.com/s3/faqs/
+
+# S3 Security 
+> By default all newly created buckets are PRIVATE
+> Can set up access control to the bucket using:
+  - Bucket Policies: apply at the bucket level
+  - Access Control List: Apply at object level
+> S3 bucket can be configured to create access logs, which log all requests made to the S3 bucket.
+  These logs can be written to another bucket. 
+
+# lab
+> can the S3 bucket policy bydefault is private 
+> can goest to Bucket policy and the policy generator to define the policy for this bucket
+  which defines that entiy would have access to the S3(using ARN:amazon recourse number)
+  it will then generate the jason for the policy, then we can copy the jason file and paste
+  to the Bucket policy editor
+> Bucket ACLs allow you to control access at a bucket level, while Object ACLs allow you 
+  to control access at the object level.
+
+# S3 encryption
+> In Transit: when transfer data from and to S3(SSL/TLS)
+> At rest:
+  -Server Side Encyrption:
+    -S3 Managed Keys -SSE-S3, encrypted each object encrypted with a unique key, use strong multi
+     factor encryption , and key are encrypted by the master key will is managed by the amazon
+    -AWS Key Management Service, Managed Keys, SSE-KMS:can have log of encryption and decrytion 
+    -Server Side Encryption with Customer Providd Keys - SSE-C: aws will do the encryption and
+    decryption , but the customer will manage the key.
+  
+  -Clinet Side Encryption: client encrypt the file before upload
+
+# Enforce encryption on a S3 bucket
+> need to initiate PUT request, everytime upload a file 
+> There is a file:
+  Expect: 100-continue
+  Meaning to wait for S3 ack before upload the body of the message
+  would not upload the body to S3 if the header is rejected
+> if file need to be encrypted at upload time, then two options are Available:
+  - x-amz-server-side-encryption: AES256(SSE-S3 - S3 managed keys)
+  - x-amz-server-side-encryption: ams:kms(SSE-S3 - S3 managed keys)
+  if the param is included in the header of PUT , then S3 will do the encryption accordingly at
+  the upload time of the file.
+> Serverside encryption can be enforced by using a Bucket Policies which denies any S3 PUT request
+which doesn't include the x-amz-server-side encryption.
+
+
+- summary
+> Encyrption in Transit
+  - SSL/TLS(HTTPS)
+> Encyrption at Rest
+  -Server Side Encyrption
+    -SSE-S3(Key managed by S3)
+    -SSE-KMS(Kye managed by aws)
+    -SSE-C(Client managed key)
+  -Client side encryption(encryption before upload the file)
+> To enforce the use of encryption for files stored in S3, use S3 bucket policy to deny all PUT request
+  that does not inlcude the x-amz-server-side-encryption params in the request header.
+
+# Encryptio on S3 lab
+> when adding bucket policy , could be error, just add wild card by the end of the recources path
+
+# CORS:corss origin resource shareing , which allows code in one S3 bucket to get access code
+# in another S3 bucket
+> Create S3 bucket -> property tab-> static hosting website
+the end point URL is used for one resources to get acess to another
+> Bucekt -> property -> CORS configuration -> add the configuration file
+<CORSConfiguration>
+    <CORSRule>
+        <AllowedOrigin>my_recourse_end_point_url</AllowedOrigin>
+        <AllowedMethod>GET</AllowedMethod>
+        <MaxAgeSeconds>3000</MaxAgeSeconds>
+        <AllowedHeader>Authorization</AllowedHeader>
+    </CORSRule>
+</CORSConfiguration>
+
+# Cloud Front(Content Deliery Network)
+# edge server could cache the content for faster read acess
+> Edge Location: the location where the content is cached and can also be written. Separate to an
+AWS Region/AZ
+> Origin: origin of the files. can be an S3 Bucket, an EC2 Instance, a Elastic Load Balancer or Route53
+> Distribution: Name given the CDN, which consists of a collection of Edge Locations.
+> Web Distribution: used for Web
+> RTMP: used for Median Streaming
+
+> could derliver entire web, including dynamic , static , streaming and interactive content using a
+global network of edge locations. Request for the content are automatically routed to the nearest edge
+location, so content is delivered with the best performace.
+e.g. optimize performance for web access backed by a S3.
+
+# S3 Transfer Acceleration
+> instead of user directly upload the file to the S3 bucket, it will uploaded to the region edge server
+and then the edge server will proprogate the update to the S3 bucekt.
+
+# Cloud Front lab
+network -> Cloud Front -> Create Distribution
+
+> Create Distribution 
+  -Restrict Bucket Access: all access to the bucket hass to go through the cloud front
+  -Origin Access Identity: to allow clound front the get acess S3 bucekt since, only the
+   owner of S3 can get acess to it by default
+  -Grant read permission on the Bucket -> Yes,Update Bucket Policy
+  -Default TTL: set the time to the fraction of the possible update
+  -Restrict Viewer Access: Choose whether you want CloudFront to require users to access your 
+   content using a signed URL or a signed cookie(e.g. only reveal content for paid user, client
+   will get the URL, and the client can not share the URL since it meant to be for only that client)
+  -AWS WAF Web ACL: packet filtering for well known attacks protect at the application layer
+  -Alternate Domain Names: can add your own client register domain name to get access cloud front
+  (Takes about 10-15 mins ,since it takes time to proprogate the configuration update to all edge servers)
+
+Once the Distribution is created
+> Restriction tab: can restrict district to acess the content
+> Invalidation tab: remove files in the cache(will be charge a fee)
+
+Use cloud Front to access the S3
+> change the S3 permission to not allow public access
+> use the cloud front distribution domain name follow by the file path
+
+# S3 Performance Optimisation
+if get 100 PUT/LIST/DELET? or > 300 GET request per second
+> GET intensive workload: use CloudFront
+> Mix Request time: choose random S3 name s.t. object would be store in different partitions 
+
+
+
+# ---------------------
+
+# ==================================================================
+# Serverless Computing
+# Lambda
+> upload your code to create a lambda function.You do not need to worry about operating system
+patching, scaling, which is managed by amazon lambda. Can use lambda in the two ways:
+-Event-driven: change to data in S3 or an Amazon DynamoDB Table
+
+> language support by lambda:
+- Node.js
+- Java
+- Python
+- C#
+- Go
+
+# How priced
+> Number of request:first 1 million request is free. $0.2 per 1 million requests thereafter per month
+> Duration: the time your code begins executing until it returns or terminates, round to the nearest
+100ms. Depends on the amount of memory you allocate to the function, $0.00001667 per GB.
+
+
+- Summary
+> Scale out
+> 1 event = 1 function
+> Serveless
+> Lambda functions can trigger other lambda functions, 1 event can = X functions if functions
+trigggers other functions 
+> architecture can be very complicated and hard to debug, need AWS X-ray to debug
+> lamda can do things globally, e.g. to back up S3 buckets to other S3 buckets etc.
+> Know your triggers
+
+
+# API gateway
+can create API gateway as "front door" for application to access data, business logic, or
+functionality from the backend services,e.g. EC2, Lambda, or any web application
+> Expose HTTPS endpoints to define a RESTful API
+> Serverlessly connect to services like Lambda & DynamoDB
+> Send each API endpoint to a different target
+> Run efficiently with low cost
+> Scale effortlessly
+> Track and control usage by API key
+> Throttle requests to prevent attacks
+
+
+
+
+
+
+
+

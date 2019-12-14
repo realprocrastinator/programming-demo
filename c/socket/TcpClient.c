@@ -63,6 +63,7 @@ int main() {
     if(connection_status == -1) printf("Error with the connection\n"); 
     
     //------------------------------------------------------------ 
+    /*
     // set scoekt to async socket
     fcntl(network_socket, F_SETFL, O_ASYNC); 
     fcntl(network_socket, F_SETOWN,getpid()); 
@@ -81,19 +82,21 @@ int main() {
     sigdelset(&sa.sa_mask,SIGINT); // add IO sig to the mask set
     //sigprocmask(SIG_SETMASK,&maskBlock,NULL); // block all signals
 
-    sigaction(SIGIO, &sa, NULL);	      /* set the signal handler... */
+    sigaction(SIGIO, &sa, NULL);	      // set the signal handler... 
+    */
     //------------------------------------------------------------ 
-    for(int i = 0; i< 3;++i){
-        //send a message to the server    
-        char client_message[BUFFER_SIZE];
-        sprintf(client_message,"The %dth Message",i);
-        send_flag = 1;
-        // send will send very fast and receiver will receive the combine message as one 
-        send(network_socket,client_message,strlen(client_message),0);
-        //sleep(5);
-        pause(); // wait until there is IO and handle then continue
+    //send a message to the server    
+    char client_message[BUFFER_SIZE];
+    sprintf(client_message,"The Message");
+    //send_flag = 1;
+    // send will send very fast and receiver will receive the combine message as one 
+    send(network_socket,client_message,strlen(client_message),0);
+    //sleep(5);
+    //pause(); // wait until there is IO and handle then continue
+    char recv_buff[BUFFER_SIZE];
+    recv(network_socket,recv_buff,sizeof(recv_buff),0);
+    printf("client received %s\n",recv_buff);
 
-    }
 
     //for(int i =0;i< 3;++i) receiveMsg();
 

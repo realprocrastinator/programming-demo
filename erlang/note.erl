@@ -11,6 +11,12 @@ io:fwrite("hello world\n").
 
 pwd(). % print cwd
 
+% IO format control seq
+% http://erlang.org/doc/man/io.html#format-1
+% https://riptutorial.com/erlang/example/12868/common-control-sequences-in-format-strings
+
+
+
 % ----------------------------------------------------------
 % functions
 % Function definition (in a module)
@@ -69,7 +75,7 @@ tuple_to_list({})
 % special functions
 % Apply the function Func in the module Mod to the arguments in the list Args.
 apply(Mod, Func, Args).
-apply( lists1,min_max,[[4,1,7,3,9,10]]). %{1, 10}
+apply(lists1,min_max,[[4,1,7,3,9,10]]). %{1, 10}
 
 % ----------------------------------------------------------
 % Process
@@ -89,7 +95,7 @@ end
 % ➜ queue messages in arrival order
 % ➜ test each message against all receive clauses – until match
 % ➜ wait for more messages if no match
-
+% no matching message would be put back in the que
 
 % Selective Message Reception:
 % A: C!foo
@@ -103,6 +109,9 @@ receive
 end
 % foo is received before bar no matter what order they were sent
 % in (or how they were queued).
+% will try to find the first match before continue to the second receive
+% if bar is sent first, not match and would be put back into the que 
+% until foo is matched then bar would be received
 
 
 % Timeouts:
@@ -125,7 +134,7 @@ flush() ->
     receive
         Any -> flush()
     after
-        0 -> true
+        0 -> true % flush until msg que is empty and then return
 end.
 
 % 0 means:
@@ -136,14 +145,15 @@ end.
 % Values of bound variables are passed along in messages
 -module(closures).
 -export([do_send/4, do_receive/0]).
-    do_send(Dest, A, B, C) ->
-        Dest ! {msg, fun(D) ->
-            % values bounded with var A , B .. are passed along with messaage
-            io:format("A: ~s, B: ~s, C: ~s, D: ~s~n", [A, B, C, D]) end}. 
-    do_receive() ->
-        receive
-            {msg, F} -> F("woohoo")
-        end.
+
+do_send(Dest, A, B, C) ->
+    Dest ! {msg, fun(D) ->
+        % values bounded with var A , B .. are passed along with messaage
+        io:format("A: ~s, B: ~s, C: ~s, D: ~s~n", [A, B, C, D]) end}. 
+do_receive() ->
+    receive
+        {msg, F} -> F("woohoo")
+    end.
 
 % 1> B = spawn(fun() -> closures:do_receive() end).
 % 2> closures:do_send(B, "hello", "there", "friend")
@@ -250,19 +260,21 @@ member(H, [H|_]) -> true;
 member(H, [_|T]) -> member(H, T);
 member(_, []) -> false.
 
-
-
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % list comp
 List = [ X || X <- L, Filter ]
+% the list of 1/X such that X is each element from List and 
+% X is greater than 0
 Y = [ 1/X || X <- List, X > 0]
 
 % useful function for list
-lists:filter(fun(E) -> E rem 2 == 0 end, List).
-lists:map(fun(E) -> E * 2 end, List).
-lists:flatten([[1,2,3],[4,5,6],[[7,8], 9, [10]]]).
-lists:unzip([{1,a}, {2,b}, {3,c}]). -> {[1,2,3],[a,b,c]}
-lists:zip([1,2,3],[a,b,c]). -> [{1,a},{2,b},{3,c}].
+lists:filter(fun(E) -> E rem 2 == 0 end, List). % lists:filter(Pred,List)
+lists:map(fun(E) -> E * 2 end, List). % lists:map(func,List)
+lists:flatten([[1,2,3],[4,5,6],[[7,8], 9, [10]]]). % flateen the nexted list
+lists:unzip([{1,a}, {2,b}, {3,c}]). % {[1,2,3],[a,b,c]}
+lists:zip([1,2,3],[a,b,c]). % [{1,a},{2,b},{3,c}].
+
+lists:member(X,L). % return true or false depend if x in L
 
 % some useful lib
 %➜ io: read, write, format, etc.
@@ -468,8 +480,110 @@ in history.
 
 e(-1) - Evaluate the previous command.
 % ----------------------------------------------------------
+% ets
+% ets:new/2 takes a Name and a list of options
+% opltions
+% ---------
+% Type = set|ordered_set|bag|duplicated_bag
+% Access = private|protected|public
+% named_table: for the name specified to connect to the table
+% {keypos,Position}: Position takes int from 1 to N specify which of the tuple element should be
+%                    used as the primary key for the table,default is position 1 
+ets:new(tableName,[set,named_table,])
 
+% insert, could insernt a single tuple or list of tuples
+ets:insert(Table,ObjectOrObjects). % overwrite existing duplicate key
+% adding more objects with keys already existing in the table (for bag and duplicate_bag),
+% false is returned if is set and duplicate key already exits
+ets:new_insert(Table,ObjectOrObjects). 
 
+ets:lookup(Table,key). % will return a list of tuples that match
+% return return only the fields or list of fields specified in the Pos 
+ets:lookup_element(Table, Key, Pos) -> Elem 
 
+ets:delte(Table,key).
+
+% e.g.
+1> ets:new(ingredients,[set,named_table]).
+ingredients
+2> ets:insert(ingredients,{bacon,greate}).
+true
+3> ets:lookup(ingredients,bacon).
+[{bacon,greate}]
+4> ets:insert(ingredients,[{bacon,awesome},{cabbage,alright}]).
+true
+5> ets:lookup(ingredients,bacon). % since table as set, will overwrite the same key
+[{bacon,awesome}]
+6> ets:lookup(ingredients,cabbage).
+[{cabbage,alright}]
+7> ets:delete(ingredients,cabbage).
+true
+8> ets:lookup(ingredients,cabbage).
+[]
+
+% traversing a table using ordered_set
+Res1 = ets:first(ingredients).
+Res2 = ets:next(ingredients,Res1).
+Res3 = ets:next(ingredients,Res2).
+Resn = ets:last(ingredients).
+Res4 = ets:prev(ingredients,ets:last(ingredients)).
+Res4 = ets:prev(ingredients,ets:first(ingredients)). % '$end_of_table'
+Res4 = ets:last(ingredients,ets:last(ingredients)). % '$end_of_table'
+% ----------------------------------------------------------
+% match
+% find record that first filed is atom items, first field and last field
+% should be the same, third filed does not care
+% match will return all the normal variable in order
+% $2 can be the same as $1
+% match_object/2 would return the whole obeject
+ets:match(table,{items,'$1','$2','_','$1'}).% [[a,b],[b,c]]
+ets:match_object(table,{items,'$1','$2','_','$1'}).% [{},{}]
+
+% delete all items in the table
+delete_all_objects(Tab) -> true
+% ----------------------------------------------------------
+% ordict
+D0 = orddict:new(). % create a new ordered dict
+
+% update(Key, Fun, Initial, Orddict1) -> Orddict2
+update(Key, fun (Old) -> Old ++ [Val] end, [Val], D).
+
+% increment the value associated with the key by the Increment
+% if the key does not exits ,key will be created with init value of Increment
+update_counter(Key, Increment, Orddict1) -> Orddict2
+
+% Stores a Key-Value pair in a dictionary. 
+% If the Key already exists in Orddict1, the associated value is replaced by Value.
+store(Key, Value, Orddict1) -> Orddict2
+
+% Appends a new Value to the current list of values associated with Key.
+% An exception is generated if the initial value associated with Key is not a list of values.
+append(Key, Value, Orddict1) -> Orddict2
+
+% Returns the value associated with Key in dictionary Orddict. 
+% This function assumes that the Key is present in the dictionary.
+% An exception is generated if Key is not in the dictionary.
+fetch(Key, Orddict) -> Value
+
+%Types
+%List = [{Key, Value}]
+%Orddict = orddict(Key, Value)
+from_list(List) -> Orddict
+
+find(Key, Orddict) -> {ok, Value} | error.
+% ----------------------------------------------------------
+% set
+L = ordsets:new().
+
+ordsets:add_element(Element, Ordset1) -> Ordset2.
+
+% if the list is empty will still return empty list
+ordsets:del_element(_element(Element, Ordset1) -> Ordset2.
+
+ordsers:is_element(Element, Ordset) -> boolean()
+
+% ----------------------------------------------------------
+% list
+delete(Elem, List1) -> List2. %if the element not in the list will return the original list
 
 
