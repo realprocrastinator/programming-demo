@@ -505,6 +505,7 @@ functionality from the backend services,e.g. EC2, Lambda, or any web application
 > Scale effortlessly
 > Track and control usage by API key
 > Throttle requests to prevent attacks
+> Connect to CloudWatch to log all requests for monitoring
 
 
 
