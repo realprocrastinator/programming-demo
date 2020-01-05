@@ -1,0 +1,28 @@
+
+#https://vitux.com/install-nfs-server-and-client-on-ubuntu/
+
+
+# Server
+# config the nfs exposed files for client to mount
+sudo nano /etc/exports
+
+# in the /etc/exports specifiy files needs to be mount
+/mnt/sharedfolder client1IP(rw,sync,no_subtree_check)
+
+#export the path mount in /mnt/export
+sudo exportfs -a
+
+# restart the nfs server
+sudo systemctl restart nfs-kernel-server
+
+
+#client (Mac)
+# check the exported the file on the nfs server
+showmount -e nfs-server-ip-address-here
+
+# mount the remote nfs
+sudo mount -t nfs nas01:/mp3 /private/nfs
+sudo mount -t nfs -o resvport,rw 192.168.3.1:/mp3 /private/nfs
+
+
+

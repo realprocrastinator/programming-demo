@@ -1,0 +1,197 @@
+
+// pipe
+// -FIFO byte stream, no way lseek() random access
+// -Reader can specify how many bytes to read regardless how many bytes 
+// writer write
+/* -When the process read the bytes from the pipe message will be consumed
+ * -When process read a empty pipe it will block until some bytes are written
+ *  into the pipe
+ * -Avoid two process read from the same pipe at the same time ,which would
+ *  result one process read some bytes and other process the rest,each process
+ *  will have incomplete information
+ *
+ *  -when a process try to write to a pipe that is full, write(2) will block until
+ *  there is space to write in the pipe(4096 bytes buffer ,each byte write atomic)
+ *
+ * -if write end of the pipe close and other process try to read, will return 0
+ */
+
+/*
+*  Video Lecture: 26
+*  Programmer: Arif Butt
+*  Course: System Programming with Linux
+*  Bidirectional communication using two pipes between two related processes
+*  Parent writes first and child reads
+*  Child writes later and parent reads
+*/
+/* --------------------------------------------------------
+ *pipe e.g.
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#define SIZE 1024
+int main(){
+    int fd1[2];
+    int fd2[2];
+    pipe(fd1);
+    pipe(fd2);
+    //create a child process
+    pid_t cpid = fork();
+    //***Child will read from fd2[0] and write into fd1[1]
+    if (cpid == 0) {
+       close(fd1[0]);
+       close(fd2[1]);
+       char childbuff[SIZE];
+       memset(childbuff, '\0',SIZE);
+       const char *msgfromchild = "Zalaid Mujahid Butt";
+       //child receives a message from parent
+       int n = read(fd2[0],childbuff,SIZE);
+       printf("\nI am child.");
+       printf("\nParent asked: ");
+       fflush(stdout);
+       write(1,childbuff,n);
+       //child sends a response to parent
+       write(fd1[1],msgfromchild,strlen(msgfromchild));
+       exit(0);
+    }
+    //***Parent will write into fd2[1] and read from fd1[0]
+    else {
+       close(fd1[1]);
+       close(fd2[0]);
+       char parentbuff[SIZE];
+       memset(parentbuff, '\0',SIZE);
+       const char * msgfromparent = "What is your name child?";
+       //parent sends a message to child
+       write(fd2[1], msgfromparent,strlen(msgfromparent));
+       //parent receives a message from child
+       int n = read(fd1[0],parentbuff,SIZE);
+       printf("\n\nI am parent, and have received my child's name.");
+       printf("\nWelcome Mr. ");
+       fflush(stdout);
+       write(1,parentbuff,n);
+       printf("\n");
+ 	  exit(0);
+    }
+}
+
+//pipe e.g. end
+// --------------------------------------------------------
+// sending message to a process
+// if pid > 0 send sig to the pid
+// if pid == 0,signal will be send to all process in the same 
+// process group of the calling process including the calling process
+// if pid = -1 will signal all process that this process has permission 
+// except init
+int kill(pid_t pid, int sig);
+int raise(int sig); // send sign to the process itself 
+void abort(); // terminate the calling process by raising SIGABRT 
+// cause a process to sleep until receive a sig that either terminate it 
+// or to call a signal handler
+int pause(); 
+// the os will send the calling process a special signal SIGALARM(14)
+// after the given number of seconds
+unsigned int alarm(unsigned int);
+
+
+
+
+// --------------------------------------------------------
+// singnal
+// call this function so that the process will handle the single whenver the signal 
+// comes it , it controls which signal to accpet and how to handle it
+/*
+ * Paraams:
+ * ----------
+ * sig: which signal to catch
+ * act: control the behavior ofthe signal handler
+ * oact: can be NULL, else return theo old signal handler info
+ */
+ //Returns:
+ // 0 on success -1 on error
+// async safe
+// https://docs.oracle.com/cd/E19455-01/806-5257/gen-26/index.html
+#include<signal.h>
+
+int sigaction(int sig, const struct sigaction *act, struct sigaction *oact);
+
+// specify a new disposition for the signal
+struct sigaction {
+    void (*sa_handler)(int) // signal handler function
+    sigset_t sa_mask        // set of signal to block while this one is being handled
+    int sa_flags            // 0 or to modify the behavior of the handler 
+    void (*sa_restorer)(void) // not for application use
+}
+
+// will return the remaining seconds of the previous alamrs set
+//
+// 
+int alarm(int);
+// ----------------------------------------------------------------
+// alarm e.g.
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+int main(){
+   int i = alarm(205);
+   printf("i contains: %d\n", i);
+   sleep(5);
+   int j = alarm(10);
+   printf("After alarm(10); j contains: %d\n", j);
+   sleep(100);
+   exit(0);
+}
+
+// ----------------------------------------------------------------
+// memory file mapping
+/* Params:
+ * -------
+ *  -addr: This is the address we want the file mapped into 
+ *  0 and let the OS choose it for you
+ *  -len: the length of the data we want to map into memory.
+ *  -prot: The “protection” argument allows you to specify what kind of access this process has to the memory mapped region.
+ *  bitwise-ORd mixture of :PROT_READ, PROT_WRITE, and PROT_EXEC
+ *  -flags: MAP_SHARED share your changes to the file with other processes,
+ *         MAP_PRIVATE f you set it to the latter, your process will get a copy 
+ *         of the mapped region, so any changes you make to it will not be reflected in the original file
+ * -fd: file descriptor of the file
+ * -off: This is the offset in the file that you want to start mapping from
+ *  this must be a multiple of the virtual memory page size.
+ *  Return:
+ *  -------
+ *  -1 on error or pointer to the start of the mapped data.
+ */
+void *mmap(void *addr, size_t len, int prot, 
+                       int flags, int fd, off_t off);
+
+// ----------------------------------------------------------------
+// sync the changes to the file mapped in the memmory and write back to the file
+// Params:
+// -------
+// -addr: the pointer returned from mmap()
+// -len: length of mapping
+// -flags: how the update should be performed
+//          MS_ASYNC: Request update the returns immediately
+//          MS_SYNC: Requet update and wait for it to complete
+//          MS_INVALIDATE: Invalidate other mapping of the same file
+// Return:
+// -------
+int msync(void *addr, size_t , len, int flags);
+
+// unmap the previous mapped file
+// when process exit or perform exec will automatically unmap
+// close fd will not unmap the region
+int munmap()
+
+
+
+
+
+
+
+// ----------------------------------------------------------------

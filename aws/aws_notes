@@ -1,10 +1,7 @@
 
 #======================================================================================
 # IAM
--Overview
-User: Individual end user
-Groups: Collection of users under one set of permissions
-Role: that has certain access permission that can be assigned to client or AWS resources
+-Overview User: Individual end user Groups: Collection of users under one set of permissions Role: that has certain access permission that can be assigned to client or AWS resources
 Policies: A document that defines one or more permissions, that can be attached to a role
           ,client, group or resources.
 
@@ -102,6 +99,8 @@ S3 Buckets
 # CLI
 # https://docs.aws.amazon.com/cli/latest/index.html
 # the region if left default would be the region that this instance is created 
+# ~/.aws/config ~/.aws/credentials will be automatically generated if first use
+# aws configure , and for later use based on first log in input
 aws configure # using access ID and acess secerete key to log in
 aws s3 ls
 aws s3 mb s3://mys3bucket # make a s3 bucket
@@ -506,6 +505,644 @@ functionality from the backend services,e.g. EC2, Lambda, or any web application
 > Track and control usage by API key
 > Throttle requests to prevent attacks
 > Connect to CloudWatch to log all requests for monitoring
+
+
+# How to config a API Gateway
+> Define an API
+> Define resources and nest resources(URL paths)
+> For each resources:
+  -Select suported HTTP methods(verbs)
+  -Set Security
+  -Choose target(e.g. EC2, Lambda, DynamoDB, etc)
+  -Set request and response transformations
+> Deploy API to a a stage
+  -Uses API Gateway domain , by default
+  -Can use custom domain
+  -supports Aws Certificate Manager:free SSL/TLS certs
+
+# API caching
+API Gateway can cache your endpoint's response s.t. can reduce the calls
+to the endoint and improves the latency of the request to your API.
+It cache the response for a specified TLL
+
+# same origin policy
+web browser permits scripts contained in a first web page to access data in a 
+second web page ,but only if both web pages have the same origin.
+To prevent Cross-site Scripting(XSS) attacks.
+- Enforced by web browser
+- Ignored by tools like Postman and curl
+
+# cross origin recource sharing(CORS)
+# https://www.youtube.com/watch?v=Ka8vG5miErk
+server at the other end can relax the same origin policy.
+allows restricted resources(e.g. fonts) on a web page to be requested from another
+domain outside the domain from which the first resources was served
+> browser makes an HTTP OPTIONS call for a URL
+  -OPTIONS is an HTTP method like GET,PUT and POST
+> Server returns a response:
+  "These other domains are approved to GET this URL"
+> Error
+  "Origin policy cannot be read at the remote resource"
+   You need to enable CORS on API Gateway.
+
+# serverless web
+> for static web hosting the bucket name and domain name has to be the same
+
+lambda -> creae lambda function -> Author from stcratch
+> create role
+> define the lambda function -> save
+-> add triggers -> choose API gateway-> configure trigger -> create an new API
+-> add -> API gateway need to be configure(click on the API Gateway)
+-> add methond and choose what lambda function to invoke by the method 
+-> action -> deploy API
+-> stage -> stage name -> API gateway name -> invokation URL
+# S3
+-> upload index.html and error.html and make them public make the bucket public
+
+# e.g. lambda function
+# https://www.youtube.com/watch?v=Ka8vG5miErk
+def lambda_handler(event, context):
+    print("In lambda handler")
+    
+    resp = {
+        "statusCode": 200,
+        # To enable cross-origin resource sharing (CORS) for a proxy integration, 
+        # you must add Access-Control-Allow-Origin: <domain_name> to the output headers.
+        # <domain_name> can be * for any domain name.
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+        },
+        "body": "Erik Zhou"
+    }
+    return resp
+
+# version control with lambda
+can work with different versions of lambda functions. Each lambda version has unique Amazon Resource Name
+After publish a version , it is immutable
+$LATEST is the version that can be modified
+> Qualified ARN: the function ARN with the version suffix: ...$LATEST
+> Unqualified ARN: the function ARN without the version suffix
+
+# Alias
+can create an Alias that points to a particular version, and can then subsequently be invoked by calling
+the alias.
+can promote a particular version to production by simply doing the remapping of the alias
+
+# lab
+> when save a lambda function , Qualifier tab -> version (will see the latest version being saved)
+when clicked in can see the latest version in the ARN
+ARN - arn:aws:lambda:ap-southeast-2:422882508432:function:myNewFunction:$LATEST
+-> Action Tab -> publish version(This version can not be changed)
+-> Action Tab -> create alias 
+
+> cans split traffic by creating alias relates to additional version ,can specify weight 
+for each version, could not use the $LATEST version(e.g. for AB testing)
+
+# Alexa
+Amazon Polly -> paste a text into the texbox -> Synthesize to S3
+-> S3 Synthesize side bar -> wait till complete the task
+
+lambda -> serverless repo -> alexa-skills-kit-nodejs-factskill-> Deploy
+(will depoly alexa skill to lambda)
+get back to the lambda function once the alexa skill competed deployed ->
+save changes to the lambda function -> get the arn of the lambda function 
+
+https://developer.amazon.com/ -> create a new skill -> give skill a name
+-> choose a temple: fact -> side bar invocation: given a invocation name
+-> end point sidebar -> paste the lambda arn(point the skill to the lambda function)
+-> save endpoints
+-> side bar intents -> GetNewFactIntent -> can add new utterance
+-> save -> build model
+-> once built can goes to the test top bar -> skill test enabled in Development
+# link the S3 mp3 file to the alexa 
+-> Goes to the S3 bucket -> choose the bucket and copy the object URL
+-> goes to the lambda function , change the data to the URL
+const data = [ # mark up for audio
+  '<audio src = \ "https://alexa-erik.s3-ap-southeast-2.amazonaws.com/3348baca-e737-46b1-8762-e38e08a80f95.mp3\"/>',
+];
+
+
+# step funcions
+allows you to visualise and test your serverless applications.provides graphical console to 
+arrange and visualised the components of your application as series of steps.
+Step functions automatically triggers and tracks each step, and retries when there are errors,
+so your application excute in order as expected. Step functions logs the state of each step for debugging.
+
+# step functions lab
+aws Services -> Application Integration -> step funcstions
+-> state machine -> create state machine -> Run a sample project
+-> Job poller -> Deploy(Takes about 10 mins) -> generate a sample lambda function
+-> CloudFormation -> select the stepfunctions that create -> action -> delete
+
+-Summary
+> visualise your serverless application
+> automatically triggers and tracks each step.
+> logs the state of each step for debuggging
+
+
+# X ray
+collects data about requests that your application servs and provides tools you can use to view
+filter, and gain insight into the data to identify issues and opportunities for optimization.
+
+# X ray SDK
+> interceptors to add to your code to trace incomming HTTP requests
+> client handlers to instrument aws SDK clients that your applications uses to other aws services
+> an HTTP clien to use to instrument calls to other internal and external HTTP web services
+
+# intergration
+> Elastic Load Balancing
+> AWS Lambda
+> API gateway
+> EC2
+> Elastic Beansstalk
+
+# supported language
+Java; Go; Node.js; Python ; Ruby; .Net
+
+# lab
+Services -> Elastic Beansstalk -> choose the language
+-> Deploy(about 10 mins) -> click on the URL -> Generate traffice
+-> xray console
+in order to see more services need to give ec2 instance the role that have the permission to access the 
+services
+-> IAM -> lasticbeanstalk-ec2-role -> attache polies(xray,S3, EC2, DynamoDB)
+upload some code to play tictactoe, that interact with S3, DynamoDB
+-> Elastic Beansstalk -> choose the application -> upload code(takes about 10 mins) 
+once the service map is shown can click on the circle to view more details and can view traces to debug
+click on the error and will be able to see the log message of where the error occurs
+-> Elastic Beansstalk -> configuration -> software-> modify -> change the email address to the user email
+-> apply
+
+-> Elastic Beansstalk -> choose the evn that you have created -> delete 
+
+# Advanced API Gateway
+can import an API from an external definition file into API gateway. Currently, the import API feature
+supports Swagger v2.0 definition files.
+
+# API Throttling
+By default ,API gateway limits the steady-sate request rate to 10,000/sec.
+The maximum concurrent requests is 5000 requests across all APIs within an AWS account.
+If goes over , will get 429 too many request error
+
+Can configure API gateway as SOAP web service passthrough
+
+# ==================================================================
+# DynamoDB
+NoSQL database service for all applications that need consistent, single-digit milisecond latency at
+any scale. supports both document and key-value data models. flexible data model and reliable performace
+suitable for mobile, web, gaming, ad-tech, IOT and many other applications.Good for serverless architecture
+> Stored on SSD storage
+> spread across 3 geographically distinct data centres
+> 2 consitency models:
+  -Eventual consistency Read(default, update within a second)
+  -Strongly consistent Reads (read the latest update)
+
+> Tables
+> Items(row)
+> Atrributes(column of data in a table, as key value pairs)
+> Supoorts key-value and document data structure
+> Document can be written in JSON, HTML or XML
+
+# primary key
+> store and retrive data based on primary key
+> Partition key: unique atrributes(e.g. userID)
+  - value of the partition key is input to an internal hash function that will determine the physical
+  location of where the data will be stored
+  - if you are using the Partition key as your primary key, then no two items can have the same
+  Partition key
+> Composite key(Partition key + Sort Key): Same user posting multiple times to a forum
+  -Partition key: e.g. user ID (can be same)
+  -Sort key: Timestamp of the post(will be different if same partition key)
+  -All items with the same Partition Key are stored together, then sorted according to the Sort
+  Key value
+  -Allows you to store multiple items with the same Partition key
+
+# Access control
+> mananged by IAM ,can create a user that have access to DynamoDB
+> can create an IAM role enable you to obtain temporary access keys which can be used to
+access DynamoDB
+> can use a special IAM condition to restrict user access to only their own records
+  -e.g. online gaming , user can only access to data relate to themselves, 
+  this can be done by adding a Condition to an IAM policy to allow access only to items 
+  where the Partition key value matches the user ID.
+  for the grained access control using IAM Condition Parameter
+  e.g. the dynamodb:LeadingKeys parameter allows user to access only the items where the
+  partition key value matches their user ID. 
+
+
+# Dynamic DB Lab
+> create a EC2 instance and run the the apache server when the ec2 start
+> download the dynamodb repo
+> install the aws skd for php
+> install php and php aws skd
+> use php script the create DynamoDB tables and populate with datas
+> use command line to get access to DynamoDB
+# key is the partition key, and N means numerical value with its value given
+aws dynamodb get-item --table-name ProductCatalog --region eu-west-2  --key '{"Id":{"N":"205"}}' 
+
+# Index
+data structure which allows to perform fast queries on specific columns.
+you can select the cloumns that you want included in the index and run search
+on the index - rather htan on the entire dataset
+- Local secondary index
+  > can only be created whne you are creating your table
+  > You cannot add, remove , or modify it later
+  > same partition key as your original table
+  > different sort key
+  > different view of your data, organised according to an alternative sort key
+  > Any queries based on this sort key are much faster using the index than the main table
+  > e.g. Partition key: User ID, sort key : account creation date
+- Global secondary index
+  > create when create table or add it later
+  > different partition key as well as a different sort key
+  > gives completly different view of the data
+  > speed up any queries relating to this alternative parttion and sort key
+  > e.g partition key: email address,sort key:last log-in date
+
+-summary:
+- run faster queries on specific data cloumns  
+- different view of your data
+- difference of the two index
+
+
+# scan and query API calls
+-Query
+> Query find items in a table based on the primary key attribute and a distinct value
+  to search for
+  e.g. given user ID 123 , will select all the attributes for that item
+> can use a optional sort key name and value to refined the result
+  e.g. if sort key is the time stamp, would be selet emails within the last 7 days
+> By default Query returns all the attributes for the item, but can use ProjectionExpression
+  parameters to select only the attributes of interets
+> Results are always sorted by the sort key in ascending order
+> reverse the order by setting the ScanIndexForward parameter to false
+> By default,Queries are eventually consistent
+> explicitly set the query to be strongly consistent
+
+-Scan
+> scan every item in the table, by default returns all data attributes
+> use the ProjectionExpression params to refine the scan to only return
+  the attributes you want(use filter)
+>  dump the whole table and then apply the filter 
+
+- Query or Scan?
+Query is more efficient
+
+- Improve Performance
+> reduce the impact of a query or scan by setting a smaller page size
+  which uses fewer read operations.(e.g. set page size to return 40 pages)
+> large number of smaller operations will allow other requests to succeed
+  without throttling
+> avoid scan, design tables in a way you can use Query,Get, or BacthGetItem APIs. 
+> By default , scan operation is sequential, returning 1 MB increments before
+  moving on to retrive the next 1MB data.it can only scan one partition at a time
+> Can configure DynamoDB to use parallel scans by logically dividing a table or index
+  into segments and scanning each segment in parallel.
+> Best to avoid parallel scans if your table or index is already read write heavy
+
+-summary
+> Query find the items in a table only using the primary key attritbutes
+> You provide the primary key name and a distinct value to search for
+> A scan operation exame every item in the table
+> By default returns all data attributes 
+> using the ProjectionExpression params to refine the result
+
+# provisioned throughput
+Measured in capacity units
+> specify your read and write capacity units when create the table
+> 1 write capacity = 1x1 KB write per second
+> 1 read capacity = 1 x strongly consistent Read of 4KB persecond
+                    2 x eventual consistent Reads of 4KB persecond
+
+# on demand capacity pricing
+> charge apply for reading, writing, and storing data
+> no need to specify the capacity , DynamoDB will scale up and down accordingly based
+on the activity of your application 
+> Greate for unpredictable workloads
+
+# DynamoDB Accellorator(DAX)
+Clustered in-memory cache for DynamoDB
+> up to a 10x read performance improvement
+> ideal for Read-Heavy and hursty workloads(auction, gaming,retail during black friday)
+
+# how DAX workds
+> is a write through caching service , data is write to the cache and the back end
+> when query the DB , will check if in the cache , to speed up read
+> if item not in the cache,  DAX will perform an eventual consistent GetItem operation,
+  against DynamoDB
+> DAX reduce the read load on the DB, maybe able to reduce provisionalread capacity
+# not suitable for
+> caters for Eventual Consistency read only , so not suitable for application require
+  Strongly Consistent reads
+> write intense
+> do not perform many reads
+> do not require micorsecond response time
+
+# Elastic Cache
+in memory cahce in the cloud
+> sits beteen appliclation and database:
+> take the loaf off the database
+> Good for read >> write DB
+
+# Types of ElastiCache
+- Memcached
+> memory object caching system
+> Multi-threaded
+> No Multi-AZ capability
+- Redis
+> Open-source in-memory key-value store
+> support more complex data structures: sorted sets and lists
+> support Master/slave replication and Muli-AZ for cross AZ redundancy
+
+# caching strategies
+- lazy loading:
+> if data is in the cache read the cache, else, it will fetch the data from
+  the DB and store it in the cache for next read
+pros:
+  > only requested data cached
+  > node failutre is okay , just meaning with an empty cache
+cons:
+  > cache miss penalty
+  > Stale data, data is updated only when there is cache miss
+  and does not update automatically when the data in the DB changes
+TTL:
+  keep cache for the specified seconds and then then TTL expires has to goes
+  to the DB to request for data, this does not eliminate stale data, but helps
+  to avoid it
+  
+-write through
+adds or updates data to the cache whenever data is written to the database
+pros:
+  > data not stale
+  > user generally more tolerant of additional latency when updating data 
+  than when retrieving it
+cons:
+  > write penalty: write to the cache and to the database
+  > if a node failed and a new one is up , data is missing until added or
+    updated in the database(mitigate by implementing lazy loading in conjunction
+    with write-through)
+  > waste resources if most of the data never read
+
+DAX only support write through caching
+
+# TTL 
+# create a session table
+aws dynamodb create-table --table-name SessionData --attribute-definitions \
+AttributeName=UserID,AttributeType=N --key-schema \
+AttributeName=UserID,KeyType=HASH \
+--provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+
+# populate the session table
+aws dynamodb batch-write-item --request-items file://items.json
+
+DynamoDB -> Table -> select a table -> items -> action -> manage TTL
+
+# DynamoDB Stream
+> Time ordered sequence of item level modifications(insert, update, delete)
+> logs are encrypted at rest and stored for 24 hours
+> accessed using a dedicated endpoint separte from the DB
+> By default the primary key is recorded
+> can capture the image before and after the change
+> usually can be used as event trigger to run lambda function
+> good event sousrce for lambda
+
+e.g. when a new invoice is added to the DB , will trigger the lambda to
+send notification to the client ,or add an item to the customer's bill
+
+# provisioned thorughput exceeded exception
+> if data request rate is too high for the read/write capacity provisioned on
+the DB table.
+> SDK will automatically retries the requests until successful
+> if you are not using the SDK you can:
+  -reduce the request frequency
+  - use exponential backoff
+# ==================================================================
+# KMS (key management service)
+make it easy for you to create and control the encryption keys and used to encrypt
+your data.
+> encryption key for KMS are regional
+> create a key -> KMS console -> create key
+> Customer Master Key(CMK)
+  - alias
+  - create date
+  - Description
+  - key date
+  - key material(customer provide or AWS provide)
+  - can never be exported
+> set up a customer master key:
+  - create alias and description 
+  - choose material option
+  - Define key administrative permissions
+    - IAM user/roles that can administer(but not use) the key through the KMS API.
+  - Define the key usage permissions
+    - IAM users/roles that can use the key to encrypt and decrypt data.
+
+# KMS API calls
+-> launch an EC2 instance
+-> goes to the that would use the encryption key, deactive the existing
+   access key and create a new key and save it.
+-> aws configure -> get the access key ID and the key that previously saved
+-> key id can be found in the KMS session
+
+# encrypt the file using the key we created
+aws kms encrypt --key-id 66efd6e9-a8d5-4004-9692-a1bac9f159c0  --plaintext fileb://secret.txt --output text --query CiphertextBlob | base64 --decode > encryptedsecret.txt
+# decrypt the file
+aws kms decrypt --ciphertext-blob fileb://encryptedsecret.txt --output text --query Plaintext | base64 --decode > decryptedsecret.txt
+aws kms re-encrypt --destination-key-id 66efd6e9-a8d5-4004-9692-a1bac9f159c0
+ --ciphertext-blob fileb://encryptedsecret.txt | base64 > newencryption.txt
+# only key administrator can have the previllege
+aws kms enable-key-rotation --key-id 66efd6e9-a8d5-4004-9692-a1bac9f159c0
+
+-summary
+> aws kms encrypt
+> aws kms decrypt
+# re-encrypt cypher text when key has been rotated or reencrypt under different context
+> aws kms re-encrypt 
+> aws kms enable-key-rotation
+
+#envolop encryption
+encrypt the key that will be used to encrypt the data
+> customer master key used to decrypt the data key(envelope key)
+> Envelop Key is used to decrypt the data
+
+
+# ==================================================================
+# SQS
+> distributed message quque
+> decouple the components of an application so they run independently,
+  easing message manangement between components, e.g. application failed while processing
+  client request, would not lose the request, other instance of the application can pick up
+  the request not being processed in the que
+> Any component of a distributed application can store messages in the queque.Messages can contain
+  up to 256 KB of text in any format. Any component can later retrieve the message using Aamazon SQS API
+> buffer between the producer and consumer, s.t. when producer burst produce requests , requests can be 
+  bufferred for later processing, e.g. could auto scale Ec2 instance based on number of messages in the que
+> standard queque:by default,guarantee that message is deliverred at least once. However occationally, more
+  than one copy of a message might be deliverred out of order. standard queque provide best effort ordering,
+  let you have nearly-unlimited number of transactions per second.
+> FIFO Queque:message delivered exactly once, order that message being sent and delivered is perserved.
+  also supports message groups that allow multiple ordered message groups within a single queque. FIFO
+  queque are limited to 300 transactions per second, but have all the capabilities of standard queques
+key facts:
+> pull based
+> message size 256k
+> kept in queque from 1 mins to 14 days, default as 4 days
+> guarantees that message will be processed at least once.  
+> visibility timeout: 
+  - time that message is invisible in he que after a reader picks up that message
+  if the message is processed within the timeout , it will be then deleted , else it will become visible
+  and other readers might pick it up for processing and would results in the message being delivered 
+  multiple times
+  - Default timeout is:30s
+  - Max:12 hours
+> long poll: instead of poll the que and return immediately, long polling would not return until a message
+  arrives in the message queque, or the long pull times out. save the frequency of polling.
+  
+# simple notification service
+Amazon simple notification service(SNS):highly scalable flexible , and cost effective capability to publish
+message from an application to subsribers or other applications
+> push notification to apple, google, windows devices
+> can also deliver notification by SMS text message or email to SQS or any http endpoint 
+> can also trigger lambda functions, if the lambda function substribed to the the topic, then lambda function
+  will be run with the payload of the message as input parameter,function can manipulate the information 
+  in the message, publish the message to another SNS topic or other aws services. 
+> SNS allows your to group multiple recipients using topics. A topic is an access point for allowing
+  recipients to dynamically subscribe for identical copies of the same notification
+> Once topic can support deliver to multiple endpoint types(IOS, android...) when publish a topic, SNS will
+  deliver he appropriated formated copies of your message to each subscriber..
+> messages published to SNS are stored redundantly across multiple availability zones 
+> pricing 
+  - $0.5 per 1million SNS request 
+  - $0.06 per 100,000 notification over http
+  - $0.75 per 100 notification over SMS
+  - $2 per 100,000 notification over email
+
+# SES vs SNS
+SES: email service for sending like marketing notifications or transactional email to the client
+using a pay as you go model
+> receive emails, incomming mails will be delivered automatically to a S3 bucket
+> incomming mails can be used to trigger lambda functions and SNS notifications
+> automated emails for purchase confirmation, newsletters, promotions
+
+# Elastic Beanstalk
+service for deploying and scaling web applications developed in many languages
+onto server platform like Apache, Nginx, Passenger, and IIS
+Developers can focus on writing code and do not need to worry about any of
+the underlying infrastructure needed to run the application
+> upload the code and Elastic Beanstalk will handel depolyment, capacity provisioning,
+  load balancing, auto-scaling and application health
+> full control of the resources power your application and pay only for the aws resources
+  required to store and run you replications,(e.g. EC2 instances and S3 bucekts)
+> Managed platform updates feature automatically applies updates your os, Java...
+> mannage and monitor your appplication health via dashboard
+> integrated with CloudWatch and X-Ray for performance data and metrics
+
+# Elastic Beanstalk Deployment
+- All at once
+  > Deploy the new version to all instances simultaneously
+  > All of the instance will be out of service until deployment takes place 
+  > not good for mission critical production system
+  > if update fails , need to roll back to the previous version to all the instances
+- Rolling depolyment Policy
+  > Deploys new version in batches 
+  > Each batch of instances is taken out of service while the deployment takes place
+  > performance capacity will reduce by the number of instance being deployed
+  > not ideal for performance sensitive systems
+  > if update fails, you need to perform an additional rolling update to roll back
+    the changes
+- Rolling with additional Batch policy
+  > lauch additional batch of instance for deployment
+  > application capacity will not be affected
+  > if update fails, you need to perform an additional rolling update to roll back
+    the changes
+- Immutable deployment policy
+  > Deploys the new version to a fresh group of instances in their own new auto scaling
+    group
+  > when the new instances pass their health checks, they are moved to your existing
+    auto scaling group; and finally the old instances are terminated. 
+  > application capacity will not be affected
+  > the impact of failed update is far less, and the rollback process requires only
+    terminating the new auto scaling group.(old version will stay and just need to delete
+    the new instance and auto scale group to get back to its previous version)
+  > perferred option for Mission Critical production systems.
+  
+# lab
+> application uploaded will be saved in S3 bucekt
+application version -> see all versions of the application being uploaded
+goes to the applicaton env -> Configuration -> rolling updates and deployments
+-> choose the deployment policy
+
+-> application version -> chooose the version to deploy -> action -> deploy
+-> env -> create new environment -> create version 1 in one environment and version in another
+
+# Advanced Elastic Beanstalk
+> can use Elastic beanstalk configuration files to configure
+packages to install, create linux user and groups, run shell commands, specify
+services to enable or configure load balancer
+> files are written in YAML or JSON format, must end with .config extension and be 
+  saved inside a folder called .ebextensions
+> .ebextensions must included in the top level directory of your application source
+  code bundle, which means that configuration files can be placed under source
+  control along with the rest of your application code
+
+# RDS & Elastic Beanstalk
+> can launch RDS instance from within the Elastic Beanstalk console, which means
+  the RDS instance is created within your Elastic Beanstalk environment, good option
+  for test and development.
+> This is might not be ideal for production environment, since the life cycle of your
+  databse is tied up to the environment, if the environment gets terminated , so will
+  the databse instance.
+> ideal for productions environment is to launch the RDS outside of Elastic Beanstalk
+  This option would gives you a lot more flexibility, allows you to connect multiple
+  environments to the same database, provides a wider choice of database types, and 
+  allows your to tear down your application environment without affecting the database
+  instance.
+> access to RDS from Elastic beanstalk: 
+  - Additional security group must be added to your environment's auto scaling group
+  - provide connections string configuration information to your application servers
+    (endpoint , password, using Elastic Beanstalk environment properties).
+
+
+# Kinesis
+> streaming data: data that is generated continously by thousands of data sources, 
+which typically send in the data records simultaneouly, and in samll sizes(kilobytes)
+e.g. purchase from online store, stock prices
+> Kinesis is a platform to send your streaming data, which makes it easy to load and
+  analyze streaming data, and also providing the ability for you to build your own
+  custome applications for your business needs.
+
+# Kinesis stream
+- video streams: securely stream videos from connected devices to AWS for analytics
+  and machine leanring
+- Data stream: Build custom applications process data in real-time
+
+> stream of data will be send to the Kinesis stream and will be stored in shards for
+  default 24 hours , and then the consumer would take the data and process the data
+  e.g. EC2 instance
+  once the data being processed, then the result will be stored in e.g. S3 or RDS
+> shards: 5 transaction per second for read, up to a max total data read rate of 2MB
+  per second and up to 1000 records per second for writes, up to a maximum total data
+  write rate of 1 MB per second(including partition keys)
+> the total capacity of the stream is the total capability of all shards. 
+
+# Kinesis firehose
+> no need to specify number of shards, and will scale automatically
+> processing the data is optional , but can trigger lambda for processing the data
+> data will automatically be stored in S3
+
+# Kinesis Analytics
+> run SQL like queries over the stream data over either Kinesis stream or firehose
+> results can be stored in S3,Redshift, ElasticCluster
+
+# Kinesis labc
+cloud formation -> create stack -> upload the template file
+once the stack has been created -> select the stack ->
+outputs -> URL: both the data producer and consumer
+Kinesis -> streams: will be able to see the stack that we have created
+
+# ==================================================================
+
+
 
 
 

@@ -1,0 +1,251 @@
+
+
+<!DOCTYPE html> <!--Tell the browser using the latest version of html-->
+<html>
+  <head>
+    <!--metadata about the page for the browser which appears in google search and will
+    also be the description in the tab once clicked-->
+    <title>My web page</title> 
+
+    <!-- can config mobile friendly settings-->
+    <!-- css files and javascript files-->
+    <link /> <!--link to the css file-->
+    <script></script> <!-- link to the js files-->
+    <style></style> <!--in line css -->
+
+    <!--------------------------------------------------------------------->
+    <style>
+      h1, h2 { /* apply to both head line 1 and head line 2 */
+        color: red;
+      }
+      
+      /* no space then the decendenct of the the element will be selected*/
+      ol li { /* li that contains in ol will be selected*/
+        color: red;
+      }
+
+      ol > li { /* only select the li which the immediate child of ol */ 
+        color: red;
+      }
+
+      input[type=text]  { /* choose input that its type attributes is text*/
+        background-color: red;
+      }
+
+      button {
+        width: 200px;
+        height: 50px;
+        font-size: 24px;
+      }
+      
+      /* pesudo class */
+      button:hover { /* style when th state of the button is hover*/
+        background-color: orange;
+      }
+
+      /*pesudo element */
+      a::before { /* apply before the element*/
+        content: "\21d2 Click here:"; /* a unicode symbol with Click here*/
+        font-weight: bold;
+      }
+
+      p::selection { /* style when element being selected */
+        color: red;
+        background-color: yellow;
+      }
+   
+      /* CSS selectors
+         a,b: Multiple element selector
+         a b: Descendent selector
+         a > b: child selector
+         a + b: adjacent sibling selector
+         [a=b]: attributes selector
+         a:b : Pseudoclass Selector
+         a::b: Pseduelement selector
+      */
+
+    </style>
+    <!--------------------------------------------------------------------->
+
+
+  </head>
+  <body>
+    <h1 id="secion1"> section1 </h1> // id of the element
+    <h2 id="secion2"> section2 </h2> // id of the element
+
+    <a href="hello.html">Click here!</a> // defines hypger link
+    <a href="#section1">Click here!</a>  // link to section with id section1
+
+    <form>
+      <input></input>
+    </form>
+
+  </body>
+
+</html>
+
+<!-- Responsive Design-------------------------------------------------------------->
+<!--Media query-->
+<style>
+  @media print{ /* only apply this css when it is specified media .e.g. print */
+    .screen-only{ /* apply to the screen-only class*/
+      display:none;
+    }
+  }
+</style>
+
+<p class="screen-only"> This is a paragraph wont appear when you print the page</p> 
+
+
+<!--different screen size-->
+<!-- make sure that the display area is adjusted to the device resolution s.t. large page would not
+  be shown on the phone as if on the pc with really samll scaled text-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @media (min-width: 500px) { /*screen dispaly greater than 500px apply*/
+    h1::after{
+      content:"to My web page";
+    }
+
+    body {
+      background-color:red;
+    }
+  }
+
+  @media (min-width: 499px) { /*screen display less than 499px appply */
+    h1::after{
+      content:"to the page";
+    }
+
+    body {
+      background-color:blue;
+    }
+  }
+</style>
+
+<body>
+  <h1> Welcome </h1>
+</body>
+
+<!--flexible box----->
+<style>
+  .container { /* the dive would flex and wrap around as the screen resolution change */
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .container > div {
+    background-color: green;
+    font-size: 20px;
+    margin:20px;
+    padding:20px;
+    width: 200px;
+  }
+</style>
+
+
+<div class="container">
+  <div>Box1</div>
+  <div>Box2</div>
+  <div>Box3</div>
+  <div>Box4</div>
+  <div>Box5</div>
+</div>
+
+<!-- flex grid-->
+<style>
+  .grid{
+    background-color: green;
+    display: grid;
+    padding: 20px;
+    grid-column-gap:10px;
+    grid-row-gap:10px;
+    grid-template-columns: 200px auto auto; /* adjust according to the screen resolution*/
+  }
+
+  .grid-item{
+    background-color: white;
+    font-size:20px;
+  }
+</style>
+
+<div class="grid">
+  <div clas="grid-item">Box1</div>
+  <div clas="grid-item">Box2</div>
+  <div clas="grid-item">Box3</div>
+  <div clas="grid-item">Box4</div>
+  <div clas="grid-item">Box5</div>
+</div>
+
+
+<!--Boot strap -->
+<!--Sass build upon Css make it easier to generate style sheet -->
+<!-- style.scss-->
+<style>
+  $color: red; /*define a variable*/
+  
+  ul{
+    font-size: 14px;
+    color: $color;
+  }
+  
+  ul{
+    font-size: 18px;
+    color: $color;
+  }
+</style>
+
+<!-- complile scss to css file-->
+sass style.scss style.css
+<!-- will watch any changes made to style.scss if there is any changes
+  will recompile files to style.css -->
+sass --watch style.scss:style.css
+
+<!-- style for nexted tags-->
+div {
+  font-size: 18px;
+  p{
+    color:blue; /* the paragraph inside the div to be blue */
+    }             /* normal css way would be div p{...}
+
+  ul { 
+    color:green; 
+  }
+}
+
+<!-- inheritance of style-->
+/*generic message style for others to inherited from*/
+/* extract the common factor of the style*/
+%message { 
+  font-family: sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  border 1px; solid black;
+  padding:20 px;
+  margin:10px;
+}
+
+.sucess{
+  @extend %message; /* inherit the message style*/
+  background-color: green;
+}
+.warning{
+  @extend %message; /* inherit the message style*/
+  background-color: red;
+}
+.error{
+  @extend %message; /* inherit the message style*/
+  background-color: blue;
+}
+
+
+<div class="success"> Success </div>
+<div class="warning"> Warning </div>
+<div class="error"> Error </div>
+
+<!-- media -->
+https://www.emailonacid.com/blog/article/email-development/emailology_media_queries_demystified_min-width_and_max-width/
+https://www.smashingmagazine.com/2010/07/how-to-use-css3-media-queries-to-create-a-mobile-version-of-your-website/
+
+
+
