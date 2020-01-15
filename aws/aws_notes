@@ -1141,13 +1141,144 @@ outputs -> URL: both the data producer and consumer
 Kinesis -> streams: will be able to see the stack that we have created
 
 # ==================================================================
+# CI & CD:continuous intergration & continuous Delivery/Deployment
+> best practice for software development and deployment
+> enable frequent software changes to be applied whilist maintaining system
+and service stability.
+> each team member commit will trigger the build automatically, the built code
+  will run agains the test framework(set of automated tests e.g. unit test, intergration
+  test, functional test)
+> CI focus on small code changes which frquently committed into the main repo once they
+  have been successfully tested
+
+  push code to repo -> build -> test -> deploy packaged application -> Environment
+
+Devop White Paper:
+https://d0.awsstatic.com/whitepapers/AWS_DevOps.pdf
+
+# aws services
+> CodeCommit - source control with git
+> CodeBuid - compile source code, run tests and package code
+> CodeDeploy - Automated Deployment to EC2, on premisese systems and lambda
+> CodePipeline - CI/CD workflow tool, fully automate the entire release process
+
+# CodeCommit lab
+CodeCommit -> create repo ->
+
+#CodeDeploy
+> In place deployment:(rolling update)
+ - system instance will get updated one by one and service capaticty will be reduced
+   according to the number of instance being updated 
+ - only can be used for EC2 and on premise system, does not suport for lambda
+ - if you need to roll back your changes, the previous version of the application
+   needs to be redeployed
+> Blue Green Deployment:
+  - New instances are provisioned and the latest revision is installed on the new instances.
+  - onced the new version has been deployed on the new instances , load balancer will redirect
+    traffic to the new instances and the old instances will be terminated. 
+  - code release is just a matter of switching the load balancer
+  - switching back to the orignal environment is faster and more reliable since it only needs
+    to switch the load balancer to the old instances(if they are not terminated)
+#terminology
+> Deployment Group: set of EC2 instances or lambda functions to which a new revision of the 
+  software is to be deployed.
+> Deployment: The process and the components used to apply a new revision
+> Deployment Configuration: a set of deployment rules as well as success/failure conditions
+  used during a deployment
+> AppSpec File: Defines the deployment actions you want the AWS CodeDeploy to execute
+> Revision: Everything needed to deploy the new version: AppSpec file, application files,
+  executables, config files
+> Application: unique identifier for the applications you want to deploy. To ensure the correct
+  combination of revision, deployment configuration and deployment group are referenced during
+  a deployment
+
+# lab
+create EC2 instance(given a user) -> create an deployment app using the command line 
+create a S3 instance(assign a role) -> upload the deployment code to the S3 bucket -> 
+CodeDeploy -> the application has been created through command line -> select the app
+in application -> create deployment -> now by accessing the EC2 instane the app should be running
+
+# e.g.
+user update source code in S3 -> trigger the cloudwatch -> trigger the codePipeLine
+-> triger the CodeDeploy -> fetch the updaed code from S3 and deploy to the instances
+(e.g. ec2, on premise, etc)
+
+# code pipe line lab
+
+# AppSpec files - lambda Deployments
+used to define parameters that will be used for a CodeDeploy deployment. The file structure
+depends on whether you are deploying to lambda or EC2/On premises.
+For Lambda deployments. the Appsepc file may be written in YAML or JSON and contains the
+following fileds:
+
+> version: reserved for furture use - currently the only allowed value is 0.0
+> resources: the name and properties of the lambda function to deploy
+> hooks: specifies lambda functions to run at set points in the deployment lifecycle to validate
+the deployment e.g. validation tests to run before allowing traffic to be sent to your newly 
+deployed instances.
+  -BeforeAllowTraffic: task to run before traffic is routed to the newly deployed Lamda function
+   (e.g. test to validate the function has been deployed correctly).
+  -AfterAllowTraffic: used to specify the tasks or functions you want to run after the traffic has been
+  routed to the newly deployed lambda function.(e.g. test to validate that the function is accepting
+  traffic correctly and behaving as expected).
+
+for EC2 and on Premises:
+> version
+> OS
+> files: location of any application files both(source and destination folder) that needs to be copied
+> hook
+
+For EC2 and On premises deployments, the appspec.yml must be placed in the root of the directory of
+your revision - the directory containing your application source code.
+mywebapp folder:
+  appspec.yml
+  /Scripts
+  /Config
+  /Source
+
+# supported hooks for EC2
+> BeforeBlockTraffic: run task on instances before they are deregistered from a load balancer
+> BlockTraffic: Deregsiter instance from a load balancer
+> AfterBlockTraffic: Run tasks on instances after they are deregistered from a load balancer
+> ApplicationStop: Gracefully stop the application in preparation for deploying the new revision
+> DownloadBundle: the CodeDeploy agent copies the application revision files to a temporary location
+> BeforeInstall: Details of any pre-installation scripts, e.g. backing up the current version,
+  decrypting files
+> Install: the Codedeploy agent copies the application revision files from their temporary location
+  to their correct location
+> AfterInstall: Details of any post - installation scripts e.g. configuration tasks, change file
+  permissions
+> ApplicationStart: Restarts any services that were stopped during ApplicationStop
+> ValidateService: Details of any tests to validate the service
+> BeforeAllowTraffic -> AllowTraffic -> AfterAllowTraffic
+
+# ==================================================================
+Docker: A container that is lightweight standalone executable software package which includes
+everything the software needs to run code, runtime environment, lib, environment settgins etc.
+
+Aws Elastic Container Service: a fully mananged clusterd platform allows you to run docker images
+
+Aws CodeBuild : build service run sets of commands that you dfine. e.g. compile code ,run test
+
+
+-summary
+> Docker commands to build, tag(alias) and push your Docker image to the ECR repo
+  - docker build -t myimagegerepo . # build docker image based on the docker file
+  - docker tag muimagerepo:latest URL:latest # create a alias for the image
+  - docker push URL # push your docker image into the ECR repo
+> use buildspec.yml to define the build commands and settings used by CodeBuild
+> can overried the settings in buildspec.yml by adding your own commands in the console
+  when launch the build
+> if build fails, check the build logs in the CodeBuild console and can also view
+  the full CodeBuild log in CloudWatch
+  
+
+# ==================================================================
+# CloudFormation
 
 
 
 
 
 
-
-
-
-
+# ==================================================================

@@ -1,0 +1,81 @@
+#import a local report onto git hub
+#https://help.github.com/articles/adding-an-existing-project-to-github-using-the-command-line
+git init
+git add .
+git commit -am "first"
+git remote add origin remote repository URL
+git push -u origin master
+
+#============================================================================
+#Remote
+#will showe the short name for the remote origin is the default remote that it
+#was coloned from:q
+git remote
+git remote -v # will show the URL for each of the remote
+
+#add a remote then can use the the shortname as alias of the remote
+git remote add <shortname> <url>
+#get the data from the remote The command goes out to that remote project and pulls down all the data from that remote project that you don’t have yet.
+git fetch <remote>
+#git fetch command only downloads the data to your local repository — it doesn’t automatically merge it with any of your work or modify what you’re currently working on. You have to merge it manually into your work when you’re ready.
+git fetch
+#git pull command to automatically fetch and then merge that remote branch into your current branch
+git pull
+
+#rename and remove a remote
+git remote rename pb paul
+git remote remove paul
+
+git remote show # show all the remote git keeps track of
+git remote show origin # show details about a particular remote 
+
+#will link the current local branch to the remote branch so that each time git pull
+#attempt to bring in commits from the <remote-branch> into the current local branch
+git branch --set-upstream <remote-branch>
+#otherwise could use below along-with the very first git push as follows
+#This sets the upstream association for any future push/pull attempts automatically.
+git push -u origin local-branch
+
+git remote rename pb paul # change remote shortname
+git remote rm paul # remove a remote
+
+# tagging ------------------------------------
+# tag specific point in history as being important e.g. release point
+git tag # show all tags
+git tag -l 'v1.8.5*' # search tag match particular pattern
+# anotated tags: stored as full objects in git db, they are checksumed, cotains
+# tagger name, email. data and taggin message ,can be signed
+
+#============================================================================
+# checkout to a different remote branch
+git checkout -B master origin/master
+# show current remote branch that is on
+git branch -vv 
+# delete branch locally
+git branch -d localBranchName
+# delete branch remotely
+git push origin --delete remoteBranchName
+# to sync with the remote get ride of remote branchs that deos not exits remotely
+git remote prune
+#============================================================================
+# Branch
+#The reset command overwrites these three trees in a specific order, stopping when you tell it to:
+#Move the branch HEAD points to (stop here if --soft)
+#Make the Index look like HEAD (stop here unless --hard)
+#Make the Working Directory look like the Index
+
+#only the repo points to the commit and now can do some amend to that repo
+git reset --soft                 #wills top at where the head and the branch points to the commit and stop
+#You rolled back to before you ran all your git add and git commit commands
+gti reset --mix                  #will stop at where the head and branch points to the commit and index updated
+#cwd will cahnge as well , so cwd , index, repo will all roll back to that commit
+#could destroy file in the cwd , since it force overwrite files in the cwd
+git reset --hard <commit hash>   #will restore back to any previous commit
+git reset --hard origin/master   #will restore the parent commit of the curr commit
+git checkout -b                  #will create the branck and checkout to that branch
+git push <URL> branch            #will push the current commit to the repo address
+
+git ls-files                    #what index looks like
+git reflog                      #show the head update log
+#============================================================================
+

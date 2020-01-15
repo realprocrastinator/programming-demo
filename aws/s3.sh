@@ -174,7 +174,11 @@ taht include failover, similar to how Amazon RDS manages database failover.
 > secure and scalable object storage that can be access from anywhere
 
 
-
+aws s3 cp local_source_dir  s3://prokopto.info/local_source_dir --recursive # include the dir
+aws s3 cp local_source_dir  s3://prokopto.info --recursive # only the content in the dir copy
+aws s3 ls s3://prokopto.info
+aws s3 rm s3://prokopto.info # remove all content in the bucket
+aws s3 sync local_source_dir s3://prokopto.info # remove all content in the bucket
 
 
 
