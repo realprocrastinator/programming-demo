@@ -7,6 +7,9 @@ void F(char** argv[]){
 
 int main(int argc, char* argv[]) {
    printf("%p\n",ADD);
+   int a = 0;
+   int *p = a + 1;
+   printf("%d\n",*p);
    
 
 

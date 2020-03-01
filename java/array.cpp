@@ -1,3 +1,10 @@
+// compile and run java 
+javac program.java
+java program
+
+
+
+//=============================================================
 // define array
 int[] a; // declare an array
 int[] a = new int[100]; // new operator to create the array
@@ -31,12 +38,26 @@ luckNumbers = Arrays.copyOf(luckNumbers,2* luckNumbers.length);
 // note: java array is essentially pointer , but it can not do
 // pointer arithemetic
 
-
-
 // for each loop
 for(variable : collection) statement // sytax
 for(int element: a): // less error prone when index is not needed
   System.out.println(element);
+
+
+// sort array
+import java.until.Arrays
+Arrays.sort(a); // apply quick sort to the array in place
+
+//================================================
+// multi dimention array
+int[][] balance; // declarea 2d array
+balance = new double[NYEARS][NRATES]; // init the array
+int[][] magicSqaure = { // specify values
+  {1,2,3},
+  {3,4,5}
+};
+
+
 
 
 

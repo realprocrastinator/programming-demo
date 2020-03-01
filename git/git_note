@@ -5,21 +5,29 @@ git add .
 git commit -am "first"
 git remote add origin remote repository URL
 git push -u origin master
+#============================================================================
+# check commit history
+git log
+git log --pretty=oneline 
 
 #============================================================================
 #Remote
-#will showe the short name for the remote origin is the default remote that it
-#was coloned from:q
-git remote
+# will showe the short name for the remote origin is the default remote that it
+# was coloned from:q
+git remote # show short name for each remote
 git remote -v # will show the URL for each of the remote
 
-#add a remote then can use the the shortname as alias of the remote
+# add a remote then can use the the shortname as alias of the remote
 git remote add <shortname> <url>
-#get the data from the remote The command goes out to that remote project and pulls down all the data from that remote project that you don’t have yet.
+git remote add pb http://github.com/zhou
+# get the data from the remote The command goes out to that remote project 
+# and pulls down all the data from that remote project that you don’t have yet.
 git fetch <remote>
-#git fetch command only downloads the data to your local repository — it doesn’t automatically merge it with any of your work or modify what you’re currently working on. You have to merge it manually into your work when you’re ready.
+git fetch pb
+# git fetch command only downloads the data to your local repository 
+# it doesn’t automatically merge it with any of your work or modify what you’re currently working on. You have to merge it manually into your work when you’re ready.
 git fetch
-#git pull command to automatically fetch and then merge that remote branch into your current branch
+# git pull command to automatically fetch and then merge that remote branch into your current branch
 git pull
 
 #rename and remove a remote
@@ -29,11 +37,11 @@ git remote remove paul
 git remote show # show all the remote git keeps track of
 git remote show origin # show details about a particular remote 
 
-#will link the current local branch to the remote branch so that each time git pull
-#attempt to bring in commits from the <remote-branch> into the current local branch
+# will link the current local branch to the remote branch so that each time git pull
+# attempt to bring in commits from the <remote-branch> into the current local branch
 git branch --set-upstream <remote-branch>
-#otherwise could use below along-with the very first git push as follows
-#This sets the upstream association for any future push/pull attempts automatically.
+# otherwise could use below along-with the very first git push as follows
+# This sets the upstream association for any future push/pull attempts automatically.
 git push -u origin local-branch
 
 git remote rename pb paul # change remote shortname
@@ -45,6 +53,25 @@ git tag # show all tags
 git tag -l 'v1.8.5*' # search tag match particular pattern
 # anotated tags: stored as full objects in git db, they are checksumed, cotains
 # tagger name, email. data and taggin message ,can be signed
+git tag -a v1.4 -m"my version 1.4" # create annotated tag
+git show v1.4 # show the tag data
+
+# light weight tag: just a tag referes to a particular commit
+git tag v1.4-lw
+# can also tag the past commit
+git tag -a v1.2 9fcb02 # tag the past commit using hash
+
+git tag -d <tag_name> # delete local tag
+git push --delete origin tagname # delete remote tag 
+
+# sharing tags like push a brnach
+git push origin v1.5 # push a specific tag
+git push origin --tags # push all the tag to remote
+
+#git alias
+git config --global alias.co checkout # co instead of checkout
+git config --global alias.unstage 'reset HEAD--'
+git config --gloaal alias.visual "!gitk" # if not a built in git command add !
 
 #============================================================================
 # checkout to a different remote branch

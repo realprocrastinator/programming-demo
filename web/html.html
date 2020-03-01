@@ -247,5 +247,25 @@ div {
 https://www.emailonacid.com/blog/article/email-development/emailology_media_queries_demystified_min-width_and_max-width/
 https://www.smashingmagazine.com/2010/07/how-to-use-css3-media-queries-to-create-a-mobile-version-of-your-website/
 
+(min/max)-width: viewport width
+(min/max)-height: viewport height
+orientation:portrait(h>w) | landscape(w>h)
+(min/max)-aspect-ratio: witdh/height
+(min/max)-resolution: 72dpi | 100dpcm
+@media(width >= 600px)
+@media(width > 600px)
+@media(width < 600px)
+<!--syntax,punctuation-->
+and:both part has to be true
+not:if untrue;media="not screen and (color)" 
+comma seperated selector: either part of is true;media="print,screen and (min-width:480px)"
+
+<!--support-->
+@support(display: flex){
+  /*rules for browser support unprefixed flex box*/
+}
+
+
+
 
 
